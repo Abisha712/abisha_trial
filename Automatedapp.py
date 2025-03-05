@@ -752,7 +752,7 @@ if file:
         # Share of Voice (SOV) Calculation
         En_sov = pd.crosstab(finaldata['Entity'], columns='News Count', values=finaldata['Entity'], aggfunc='count').round(0)
         En_sov.sort_values('News Count', ascending=False)
-        En_sov['% '] = ((En_sov['News Count'] / En_sov['News Count'].sum()) * 100).round(2)
+        En_sov['% '] = ((En_sov['News Count'] / En_sov['News Count'].sum()) * 100).round(0).astype(int)
         Sov_table = En_sov.sort_values(by='News Count', ascending=False)
         Sov_table.loc['Total'] = Sov_table.sum(numeric_only=True, axis=0)
         Entity_SOV1 = Sov_table
