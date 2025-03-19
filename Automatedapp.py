@@ -1563,16 +1563,20 @@ News search: All Articles: entity mentioned at least once in the article"""
                 file_path2 = temp_file2.name
             wb1 = load_workbook(file_path1)  # Destination workbook (from multiple_dfs)
             wb2 = load_workbook(file_path2)  # Source workbook (from create_entity_sheets)
-            for source_sheet in wb2.sheets:
-                new_sheet = source_sheet.copy(after=wb1.sheets[-1])
-                new_sheet.name = source_sheet.name  # Optionally keep the same sheet name
+            dest_wb = load_workbook(file_path1)  # Destination workbook (from multiple_dfs)
+            src_wb  = load_workbook(file_path2)   # Source workbook (from create_entity_sheets)
+            for sheet_name in src_wb.sheetnames:
+                src_sheet = src_wb[sheet_name]
+                dest_sheet = dest_wb.create_sheet(title=sheet_name)
+                for row in src_sheet.iter_rows():
+                    for cell in row:
+                        dest_sheet[cell.coordinate].value = cell.value
+            first_sheet = dest_wb[dest_wb.sheetnames[0]]
+            first_sheet.title = "Report"
+
             combined_path = "Combined Excel.xlsx"
             wb1.save(combined_path)
-            wb1.close()
-            wb2.close()
-            wb = load_workbook(combined_path)
-            wb.worksheets[0].title = "Report"
-            wb.save(combined_path)
+           
             with open(combined_path, "rb") as f:
                 combined_data = f.read()
             b64_all = base64.b64encode(combined_data).decode()
