@@ -11,5 +11,5 @@ wordcloud
 fuzzywuzzy
 gensim
 spacy
-xlwings
+
 
