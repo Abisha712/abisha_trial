@@ -1572,6 +1572,7 @@ News search: All Articles: entity mentioned at least once in the article"""
             excel_io_2 = io.BytesIO()
             with pd.ExcelWriter(excel_io_2, engine="xlsxwriter") as writer:
                 wb2 = create_entity_sheets(finaldata, writer)
+            excel_io_2.seek(0)
             with tempfile.NamedTemporaryFile(suffix=".xlsx", delete=False) as temp_file1:
                 temp_file1.write(excel_io_all.read())
                 temp_file1.flush()
