@@ -1561,8 +1561,8 @@ News search: All Articles: entity mentioned at least once in the article"""
                 temp_file2.write(excel_io_2.read())
                 temp_file2.flush()
                 file_path2 = temp_file2.name
-            wb1 = xw.Book(file_path1)  # Destination workbook (from multiple_dfs)
-            wb2 = xw.Book(file_path2)  # Source workbook (from create_entity_sheets)
+            wb1 = load_workbook(file_path1)  # Destination workbook (from multiple_dfs)
+            wb2 = load_workbook(file_path2)  # Source workbook (from create_entity_sheets)
             for source_sheet in wb2.sheets:
                 new_sheet = source_sheet.copy(after=wb1.sheets[-1])
                 new_sheet.name = source_sheet.name  # Optionally keep the same sheet name
