@@ -1570,7 +1570,7 @@ News search: All Articles: entity mentioned at least once in the article"""
             multiple_dfs(dfs, 'Tables', excel_io_all, comments, entity_info)
             excel_io_all.seek(0)
             excel_io_2 = io.BytesIO()
-            with pd.ExcelWriter(excel_io_2, engine="openpyxl") as writer:
+            with pd.ExcelWriter(excel_io_2, engine="xlsxwriter") as writer:
                 wb2 = create_entity_sheets(finaldata, writer)
             with tempfile.NamedTemporaryFile(suffix=".xlsx", delete=False) as temp_file1:
                 temp_file1.write(excel_io_all.read())
