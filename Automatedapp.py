@@ -234,20 +234,41 @@ def create_entity_sheets(data, writer):
     # Define a format with text wrap
     wrap_format = writer.book.add_format({'text_wrap': True})
 
-    for Entity in data['Entity'].unique():
+    # Get all unique entity names from the DataFrame
+    entities = list(data['Entity'].unique())
+    
+    # Identify client sheets (if any)
+    client_sheets = [e for e in entities if e.startswith("Client-")]
+    
+    if client_sheets:
+        # Choose the first client sheet alphabetically
+        client_sheet = sorted(client_sheets, key=lambda x: x.lower())[0]
+        # Exclude the chosen client sheet from the remaining list
+        remaining = sorted([e for e in entities if e != client_sheet], key=lambda x: x.lower())
+        final_order = [client_sheet] + remaining
+    else:
+        # If no entity starts with "Client-", simply sort alphabetically
+        final_order = sorted(entities, key=lambda x: x.lower())
+    
+    # Now iterate over the final_order to create sheets
+    for Entity in final_order:
         entity_df = data[data['Entity'] == Entity]
+        entity_df['Date'] =  entity_df['Date'].dt.date
+        
         entity_df.to_excel(writer, sheet_name=Entity, index=False)
         worksheet = writer.sheets[Entity]
         worksheet.set_column(1, 4, 48, cell_format=wrap_format)
-        # Calculate column widths based on the maximum content length in each column except columns 1 to 4
+        
+        # Calculate column widths based on the maximum content length in each column (excluding columns 1 to 4)
         max_col_widths = [
             max(len(str(value)) for value in entity_df[column])
             for column in entity_df.columns[5:]  # Exclude columns 1 to 4
         ]
-
+        
         # Set the column widths dynamically for columns 5 onwards
         for col_num, max_width in enumerate(max_col_widths):
-            worksheet.set_column(col_num + 5, col_num + 5, max_width + 2)  # Adding extra padding for readability       
+            worksheet.set_column(col_num + 5, col_num + 5, max_width + 2)
+   
 
 
 def add_entity_info(ws, entity_info, start_row):
