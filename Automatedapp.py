@@ -4,6 +4,7 @@ import base64
 import xlwings as xw
 import tempfile
 from openpyxl import load_workbook
+from copy import deepcopy
 import io
 import numpy as np
 import re
@@ -33,6 +34,30 @@ from wordcloud import WordCloud, STOPWORDS, ImageColorGenerator
 
 # Streamlit app with a sidebar layout
 st.set_page_config(layout="wide")
+
+def combine_workbooks_with_openpyxl(file_path1, file_path2):
+   # Open both workbooks using openpyxl
+   wb1 = load_workbook(file_path1)
+   wb2 = load_workbook(file_path2)
+   # Iterate through sheets in wb2 and copy to wb1
+   for sheet_name in wb2.sheetnames:
+       source_sheet = wb2[sheet_name]
+       new_sheet = wb1.create_sheet(sheet_name)
+       # Copy content and formatting from source_sheet to new_sheet
+       for row in source_sheet.iter_rows():
+           for cell in row:
+               new_cell = new_sheet[cell.coordinate]
+               new_cell.value = cell.value
+               new_cell.font = deepcopy(cell.font)
+               new_cell.fill = deepcopy(cell.fill)
+               new_cell.border = deepcopy(cell.border)
+               new_cell.alignment = deepcopy(cell.alignment)
+               new_cell.number_format = deepcopy(cell.number_format)
+               new_cell.protection = deepcopy(cell.protection)
+   # Save the combined workbook to a temporary path
+   combined_path = "Combined_Excel_with_openpyxl.xlsx"
+   wb1.save(combined_path)
+   return combined_path
 
 # Function to process the Excel file
 def process_excel(file):
@@ -1531,26 +1556,23 @@ News search: All Articles: entity mentioned at least once in the article"""
             b64_all = base64.b64encode(excel_io_all.read()).decode()
             href_all = f'<a href="data:application/vnd.openxmlformats-officedocument.spreadsheetml.sheet;base64,{b64_all}" download="{file_name_all}">Download All DataFrames Excel</a>'
             st.sidebar.markdown(href_all, unsafe_allow_html=True)
- 
-        
+            
         st.sidebar.write("## Download Report and Entity Sheets in single Excel workbook")
         file_name_all = st.sidebar.text_input("Enter file name for Combined Excel", "Combined Excel.xlsx")
         if st.sidebar.button("Download Combined File"):
             dfs = [Entity_SOV3, sov_dt1, pubs_table, Jour_table, PType_Entity, Jour_Comp, Jour_Client]
             comments = ['SOV Table', 'Month-on-Month Table', 'Publication Table', 'Journalist Table',
-                        'Pub Type and Entity Table','Jour writing on Comp and not on Client', 'Jour writing on Client and not on Comp']
-            entity_info = f"""Entity:{client_name}
-Time Period of analysis: 19th April 2023 to 18th April 2024
-Source: (Online) Meltwater, Select 100 online publications, which include General mainlines, Business and Financial publications, news age media, technology publications.
-News search: All Articles: entity mentioned at least once in the article"""
+               'Pub Type and Entity Table', 'Jour writing on Comp and not on Client', 'Jour writing on Client and not on Comp']
+            entity_info = f"""Entity: {client_name}
+   Time Period of analysis: 19th April 2023 to 18th April 2024
+   Source: (Online) Meltwater, Select 100 online publications, which include General mainlines, Business and Financial publications, news age media, technology publications.
+   News search: All Articles: entity mentioned at least once in the article"""
             excel_io_all = io.BytesIO()
-            w1 = multiple_dfs(dfs, 'Tables', excel_io_all, comments, entity_info)
+            multiple_dfs(dfs, 'Tables', excel_io_all, comments, entity_info)
             excel_io_all.seek(0)
             excel_io_2 = io.BytesIO()
-            with pd.ExcelWriter(excel_io_2, engine="xlsxwriter") as writer:
+            with pd.ExcelWriter(excel_io_2, engine="openpyxl") as writer:
                 wb2 = create_entity_sheets(finaldata, writer)
-            excel_io_all.seek(0)
-            excel_io_2.seek(0)
             with tempfile.NamedTemporaryFile(suffix=".xlsx", delete=False) as temp_file1:
                 temp_file1.write(excel_io_all.read())
                 temp_file1.flush()
@@ -1559,24 +1581,13 @@ News search: All Articles: entity mentioned at least once in the article"""
                 temp_file2.write(excel_io_2.read())
                 temp_file2.flush()
                 file_path2 = temp_file2.name
-            wb1 = xw.Book(file_path1,mode='r')  # Destination workbook (from multiple_dfs)
-            wb2 = xw.Book(file_path2,mode='r')  # Source workbook (from create_entity_sheets)
-            for source_sheet in wb2.sheets:
-                new_sheet = source_sheet.copy(after=wb1.sheets[-1])
-                new_sheet.name = source_sheet.name  # Optionally keep the same sheet name
-            combined_path = "Combined Excel.xlsx"
-            wb1.save(combined_path)
-            wb1.close()
-            wb2.close()
-            wb = load_workbook(combined_path)
-            wb.worksheets[0].title = "Report"
-            wb.save(combined_path)
+            combined_path = combine_workbooks_with_openpyxl(file_path1, file_path2)
             with open(combined_path, "rb") as f:
                 combined_data = f.read()
             b64_all = base64.b64encode(combined_data).decode()
-            file_name_all = "Combined Excel.xlsx"
-            href_all = (f'<a href="data:application/vnd.openxmlformats-officedocument.spreadsheetml.sheet;'f'base64,{b64_all}" download="{file_name_all}">Download Combined Excel</a>')
-            st.sidebar.markdown(href_all, unsafe_allow_html=True)    # Load the image files
+            href_all = f'<a href="data:application/vnd.openxmlformats-officedocument.spreadsheetml.sheet;base64,{b64_all}" download="{file_name_all}">Download Combined Excel</a>'
+            st.sidebar.markdown(href_all, unsafe_allow_html=True)
+            
     img_path = r"New logo snip.png"
     img_path1 = r"New Templete main slide.png"
 
