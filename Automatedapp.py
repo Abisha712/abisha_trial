@@ -1515,14 +1515,12 @@ if file:
        # Download All DataFrames as a Single Excel Sheet
         st.sidebar.write("## Download All DataFrames as a Single Excel Sheet")
         file_name_all = st.sidebar.text_input("Enter file name for all DataFrames", "all_dataframes.xlsx")
-        
         if st.sidebar.button("Download All DataFrames"):
             # List of DataFrames to save
             dfs = [Entity_SOV3, sov_dt1, pubs_table, Jour_table, PType_Entity, Jour_Comp, Jour_Client]
             comments = ['SOV Table', 'Month-on-Month Table', 'Publication Table', 'Journalist Table',
                         'Pub Type and Entity Table','Jour writing on Comp and not on Client', 'Jour writing on Client and not on Comp'
                         ]
-            
             entity_info = f"""Entity:{client_name}
 Time Period of analysis: 19th April 2023 to 18th April 2024
 Source: (Online) Meltwater, Select 100 online publications, which include General mainlines, Business and Financial publications, news age media, technology publications.
@@ -1533,7 +1531,7 @@ News search: All Articles: entity mentioned at least once in the article"""
             b64_all = base64.b64encode(excel_io_all.read()).decode()
             href_all = f'<a href="data:application/vnd.openxmlformats-officedocument.spreadsheetml.sheet;base64,{b64_all}" download="{file_name_all}">Download All DataFrames Excel</a>'
             st.sidebar.markdown(href_all, unsafe_allow_html=True)
-
+ 
         
         st.sidebar.write("## Download Report and Entity Sheets in single Excel workbook")
         file_name_all = st.sidebar.text_input("Enter file name for Combined Excel", "Combined Excel.xlsx")
@@ -1561,29 +1559,24 @@ News search: All Articles: entity mentioned at least once in the article"""
                 temp_file2.write(excel_io_2.read())
                 temp_file2.flush()
                 file_path2 = temp_file2.name
-            wb1 = load_workbook(file_path1)  # Destination workbook (from multiple_dfs)
-            wb2 = load_workbook(file_path2)  # Source workbook (from create_entity_sheets)
-            dest_wb = load_workbook(file_path1)  # Destination workbook (from multiple_dfs)
-            src_wb  = load_workbook(file_path2)   # Source workbook (from create_entity_sheets)
-            for sheet_name in src_wb.sheetnames:
-                src_sheet = src_wb[sheet_name]
-                dest_sheet = dest_wb.create_sheet(title=sheet_name)
-                for row in src_sheet.iter_rows():
-                    for cell in row:
-                        dest_sheet[cell.coordinate].value = cell.value
-            first_sheet = dest_wb[dest_wb.sheetnames[0]]
-            first_sheet.title = "Report"
-
+            wb1 = xw.Book(file_path1,mode='r')  # Destination workbook (from multiple_dfs)
+            wb2 = xw.Book(file_path2,mode='r')  # Source workbook (from create_entity_sheets)
+            for source_sheet in wb2.sheets:
+                new_sheet = source_sheet.copy(after=wb1.sheets[-1])
+                new_sheet.name = source_sheet.name  # Optionally keep the same sheet name
             combined_path = "Combined Excel.xlsx"
             wb1.save(combined_path)
-           
+            wb1.close()
+            wb2.close()
+            wb = load_workbook(combined_path)
+            wb.worksheets[0].title = "Report"
+            wb.save(combined_path)
             with open(combined_path, "rb") as f:
                 combined_data = f.read()
             b64_all = base64.b64encode(combined_data).decode()
             file_name_all = "Combined Excel.xlsx"
             href_all = (f'<a href="data:application/vnd.openxmlformats-officedocument.spreadsheetml.sheet;'f'base64,{b64_all}" download="{file_name_all}">Download Combined Excel</a>')
-            st.sidebar.markdown(href_all, unsafe_allow_html=True)
-    # Load the image files
+            st.sidebar.markdown(href_all, unsafe_allow_html=True)    # Load the image files
     img_path = r"New logo snip.png"
     img_path1 = r"New Templete main slide.png"
 
