@@ -12,5 +12,4 @@ fuzzywuzzy
 gensim
 spacy
 xlwings
-tempfile
 
