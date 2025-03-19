@@ -1532,8 +1532,6 @@ News search: All Articles: entity mentioned at least once in the article"""
             b64_all = base64.b64encode(excel_io_all.read()).decode()
             href_all = f'<a href="data:application/vnd.openxmlformats-officedocument.spreadsheetml.sheet;base64,{b64_all}" download="{file_name_all}">Download All DataFrames Excel</a>'
             st.sidebar.markdown(href_all, unsafe_allow_html=True)
- 
-        
         st.sidebar.write("## Download Report and Entity Sheets in single Excel workbook")
         file_name_all = st.sidebar.text_input("Enter file name for Combined Excel", "Combined Excel.xlsx")
         if st.sidebar.button("Download Combined File"):
