@@ -233,6 +233,7 @@ def create_entity_sheets(data, writer):
 
     for Entity in data['Entity'].unique():
         entity_df = data[data['Entity'] == Entity]
+        entity_df['Date'] =  entity_df['Date'].dt.date
         entity_df.to_excel(writer, sheet_name=Entity, index=False)
         worksheet = writer.sheets[Entity]
         worksheet.set_column(1, 4, 48, cell_format=wrap_format)
@@ -752,7 +753,7 @@ if file:
         # Share of Voice (SOV) Calculation
         En_sov = pd.crosstab(finaldata['Entity'], columns='News Count', values=finaldata['Entity'], aggfunc='count').round(0)
         En_sov.sort_values('News Count', ascending=False)
-        En_sov['% '] = ((En_sov['News Count'] / En_sov['News Count'].sum()) * 100).round(2)
+        En_sov['% '] = ((En_sov['News Count'] / En_sov['News Count'].sum()) * 100).round()
         Sov_table = En_sov.sort_values(by='News Count', ascending=False)
         Sov_table.loc['Total'] = Sov_table.sum(numeric_only=True, axis=0)
         Entity_SOV1 = Sov_table
