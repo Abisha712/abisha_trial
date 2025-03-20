@@ -1,9 +1,6 @@
 import streamlit as st
 import pandas as pd
 import base64
-import tempfile
-from openpyxl import load_workbook
-from copy import deepcopy
 import io
 import numpy as np
 import re
@@ -33,30 +30,6 @@ from wordcloud import WordCloud, STOPWORDS, ImageColorGenerator
 
 # Streamlit app with a sidebar layout
 st.set_page_config(layout="wide")
-
-def combine_workbooks_with_openpyxl(file_path1, file_path2):
-   # Open both workbooks using openpyxl
-   wb1 = load_workbook(file_path1)
-   wb2 = load_workbook(file_path2)
-   # Iterate through sheets in wb2 and copy to wb1
-   for sheet_name in wb2.sheetnames:
-       source_sheet = wb2[sheet_name]
-       new_sheet = wb1.create_sheet(sheet_name)
-       # Copy content and formatting from source_sheet to new_sheet
-       for row in source_sheet.iter_rows():
-           for cell in row:
-               new_cell = new_sheet[cell.coordinate]
-               new_cell.value = cell.value
-               new_cell.font = deepcopy(cell.font)
-               new_cell.fill = deepcopy(cell.fill)
-               new_cell.border = deepcopy(cell.border)
-               new_cell.alignment = deepcopy(cell.alignment)
-               new_cell.number_format = deepcopy(cell.number_format)
-               new_cell.protection = deepcopy(cell.protection)
-   # Save the combined workbook to a temporary path
-   combined_path = "Combined_Excel_with_openpyxl.xlsx"
-   wb1.save(combined_path)
-   return combined_path
 
 # Function to process the Excel file
 def process_excel(file):
@@ -207,7 +180,7 @@ if uploaded_files:
     
     new_order = (
         existing_columns[:influencer_index + 1] +  # All columns up to and including 'Influencer'
-        ['Entity', 'Reach', 'Sentiment', 'Keywords', 'State', 'City', 'Engagement'] +  # Adding new columns
+        ['Entity', 'Reach', 'Sentiment', 'Keywords', 'State', 'City', 'Engagement','Language'] +  # Adding new columns
         existing_columns[influencer_index + 1:country_index + 1]  # All columns between 'Influencer' and 'Country'
     )
     
@@ -258,40 +231,20 @@ def create_entity_sheets(data, writer):
     # Define a format with text wrap
     wrap_format = writer.book.add_format({'text_wrap': True})
 
-    # Get all unique entity names from the DataFrame
-    entities = list(data['Entity'].unique())
-    
-    # Identify client sheets (if any)
-    client_sheets = [e for e in entities if e.startswith("Client-")]
-    
-    if client_sheets:
-        # Choose the first client sheet alphabetically
-        client_sheet = sorted(client_sheets, key=lambda x: x.lower())[0]
-        # Exclude the chosen client sheet from the remaining list
-        remaining = sorted([e for e in entities if e != client_sheet], key=lambda x: x.lower())
-        final_order = [client_sheet] + remaining
-    else:
-        # If no entity starts with "Client-", simply sort alphabetically
-        final_order = sorted(entities, key=lambda x: x.lower())
-    
-    # Now iterate over the final_order to create sheets
-    for Entity in final_order:
+    for Entity in data['Entity'].unique():
         entity_df = data[data['Entity'] == Entity]
-        entity_df['Date'] =  entity_df['Date'].dt.date
-        
         entity_df.to_excel(writer, sheet_name=Entity, index=False)
         worksheet = writer.sheets[Entity]
         worksheet.set_column(1, 4, 48, cell_format=wrap_format)
-        
-        # Calculate column widths based on the maximum content length in each column (excluding columns 1 to 4)
+        # Calculate column widths based on the maximum content length in each column except columns 1 to 4
         max_col_widths = [
             max(len(str(value)) for value in entity_df[column])
             for column in entity_df.columns[5:]  # Exclude columns 1 to 4
         ]
-        
+
         # Set the column widths dynamically for columns 5 onwards
         for col_num, max_width in enumerate(max_col_widths):
-            worksheet.set_column(col_num + 5, col_num + 5, max_width + 2)
+            worksheet.set_column(col_num + 5, col_num + 5, max_width + 2)  # Adding extra padding for readability       
 
 
 def add_entity_info(ws, entity_info, start_row):
@@ -778,7 +731,7 @@ if file:
         # st.write(data)
 
         # Data preprocessing
-        data.drop(columns=data.columns[19:], axis=1, inplace=True)
+        data.drop(columns=data.columns[20:], axis=1, inplace=True)
         data = data.rename({'Influencer': 'Journalist'}, axis=1)
         # data.drop_duplicates(subset=['Date', 'Entity', 'Headline', 'Publication Name'], keep='first', inplace=True)
         # data.drop_duplicates(subset=['Date', 'Entity', 'Opening Text', 'Publication Name'], keep='first', inplace=True, ignore_index=True)
@@ -1287,8 +1240,8 @@ if file:
         topjc_1_name = df_topjc1.iloc[0]["Journalist"]
         topjc_1_count = df_topjc1.iloc[0][client_column]
 
-        #topjc_2_name = df_topjc2.iloc[0]["Journalist"]
-        #topjc_2_count = df_topjc2.iloc[0][client_column]
+        topjc_2_name = df_topjc2.iloc[0]["Journalist"]
+        topjc_2_count = df_topjc2.iloc[0][client_column]
 
         
         # # Extract the top 3 journalits writing in comp and not on client and their counts
@@ -1337,8 +1290,8 @@ if file:
         topjp_1_name = df_topjp1.iloc[0]["Publication Name"]
         topjp_1_count = df_topjp1.iloc[0][client_column]
 
-        #topjp_2_name = df_topjp2.iloc[0]["Publication Name"]
-        #topjp_2_count = df_topjp2.iloc[0][client_column]
+        topjp_2_name = df_topjp2.iloc[0]["Publication Name"]
+        topjp_2_count = df_topjp2.iloc[0][client_column]
 
 
         # # Extract the top 3 publications and their counts
@@ -1536,15 +1489,17 @@ if file:
                 st.sidebar.markdown(href_selected, unsafe_allow_html=True)
                 
                 
-       # Download All DataFrames as a Single Excel Sheet
+        # Download All DataFrames as a Single Excel Sheet
         st.sidebar.write("## Download All DataFrames as a Single Excel Sheet")
         file_name_all = st.sidebar.text_input("Enter file name for all DataFrames", "all_dataframes.xlsx")
+        
         if st.sidebar.button("Download All DataFrames"):
             # List of DataFrames to save
             dfs = [Entity_SOV3, sov_dt1, pubs_table, Jour_table, PType_Entity, Jour_Comp, Jour_Client]
             comments = ['SOV Table', 'Month-on-Month Table', 'Publication Table', 'Journalist Table',
                         'Pub Type and Entity Table','Jour writing on Comp and not on Client', 'Jour writing on Client and not on Comp'
                         ]
+            
             entity_info = f"""Entity:{client_name}
 Time Period of analysis: 19th April 2023 to 18th April 2024
 Source: (Online) Meltwater, Select 100 online publications, which include General mainlines, Business and Financial publications, news age media, technology publications.
@@ -1555,41 +1510,14 @@ News search: All Articles: entity mentioned at least once in the article"""
             b64_all = base64.b64encode(excel_io_all.read()).decode()
             href_all = f'<a href="data:application/vnd.openxmlformats-officedocument.spreadsheetml.sheet;base64,{b64_all}" download="{file_name_all}">Download All DataFrames Excel</a>'
             st.sidebar.markdown(href_all, unsafe_allow_html=True)
-            
-        st.sidebar.write("## Download Report and Entity Sheets in single Excel workbook")
-        file_name_all = st.sidebar.text_input("Enter file name for Combined Excel", "Combined Excel.xlsx")
-        if st.sidebar.button("Download Combined File"):
-            dfs = [Entity_SOV3, sov_dt1, pubs_table, Jour_table, PType_Entity, Jour_Comp, Jour_Client]
-            comments = ['SOV Table', 'Month-on-Month Table', 'Publication Table', 'Journalist Table',
-               'Pub Type and Entity Table', 'Jour writing on Comp and not on Client', 'Jour writing on Client and not on Comp']
-            entity_info = f"""Entity: {client_name}
-   Time Period of analysis: 19th April 2023 to 18th April 2024
-   Source: (Online) Meltwater, Select 100 online publications, which include General mainlines, Business and Financial publications, news age media, technology publications.
-   News search: All Articles: entity mentioned at least once in the article"""
-            excel_io_all = io.BytesIO()
-            multiple_dfs(dfs, 'Tables', excel_io_all, comments, entity_info)
-            excel_io_all.seek(0)
-            excel_io_2 = io.BytesIO()
-            with pd.ExcelWriter(excel_io_2, engine="xlsxwriter") as writer:
-                wb2 = create_entity_sheets(finaldata, writer)
-            excel_io_2.seek(0)
-            with tempfile.NamedTemporaryFile(suffix=".xlsx", delete=False) as temp_file1:
-                temp_file1.write(excel_io_all.read())
-                temp_file1.flush()
-                file_path1 = temp_file1.name
-            with tempfile.NamedTemporaryFile(suffix=".xlsx", delete=False) as temp_file2:
-                temp_file2.write(excel_io_2.read())
-                temp_file2.flush()
-                file_path2 = temp_file2.name
-            combined_path = combine_workbooks_with_openpyxl(file_path1, file_path2)
-            with open(combined_path, "rb") as f:
-                combined_data = f.read()
-            b64_all = base64.b64encode(combined_data).decode()
-            href_all = f'<a href="data:application/vnd.openxmlformats-officedocument.spreadsheetml.sheet;base64,{b64_all}" download="{file_name_all}">Download Combined Excel</a>'
-            st.sidebar.markdown(href_all, unsafe_allow_html=True)
-            
-    img_path = r"New logo snip.png"
-    img_path1 = r"New Templete main slide.png"
+
+        st.write("## Preview Selected DataFrame")
+        selected_dataframe = st.selectbox("Select DataFrame to Preview:", list(dataframes_to_download.keys()))
+        st.dataframe(dataframes_to_download[selected_dataframe])
+
+    # Load the image files
+    img_path = r"New logo snip.PNG"
+    img_path1 = r"New Templete main slide.PNG"
 
     # Create a new PowerPoint presentation with widescreen dimensions
     prs = Presentation()               
@@ -2027,7 +1955,7 @@ f"•{client_name} witnessed its highest news coverage in {topdt_1_name}, with {
     f"•IIT Madras and IIT Delhi dominate across all publication types, especially in general, business, technology, and digital-first publications.\n"
     f"•{client_name} may find value in engaging more with General and Business along with technology, and digital-first publications to expand its reach and visibility among broader audiences.\n",
 
-                        f"•The top journalists writing on competitors and not on {client_name}  are {topjc_1_name} from {topjp_1_name} with {topjc_1_count}.\n"
+                        f"•The top journalists writing on competitors and not on {client_name}  are {topjc_1_name} from {topjp_1_name} with {topjc_1_count} articles, followed by {topjc_2_name} from {topjp_2_name} with {topjc_2_count} articles, and {topjc_3_name} from {topjp_3_name} with {topjc_3_count} articles.\n"
 f"•These journalists have not written any articles on {client_name} so there is an opportunity for {client_name} to engage with these journalists to broaden its coverage and influence within the industry.\n",
 
 f"•The  journalists reporting on {client_name} and not on its competitors are Navjeevan Gopal from The Indian Express with 1 article and Munieshwer A Sagar from TOI with 1 articles.\n",
