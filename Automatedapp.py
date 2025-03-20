@@ -1923,7 +1923,6 @@ f"•{client_name} witnessed its highest news coverage in {topdt_1_name}, with {
     # Sidebar for PowerPoint download settings
     st.sidebar.write("## Download All DataFrames as a PowerPoint File")
     pptx_file_name = st.sidebar.text_input("Enter file name for PowerPoint", "dataframes_presentation.pptx")
-
     if st.sidebar.button("Download PowerPoint"):
         # List of DataFrames to save
         pubs_table1 = pubs_table.head(10)
