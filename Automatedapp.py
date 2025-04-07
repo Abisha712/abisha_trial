@@ -398,13 +398,14 @@ def multiple_dfs(df_list, sheet_name, file_name, comments, entity_info):
     # Add entity information to the first 4 rows
     add_entity_info(ws, entity_info, current_row)
     current_row += 6
-
     for df, comment in zip(df_list, comments):
-        # Check if this DF needs the last row bolded
-        highlight = df is Entity_SOV3 or df is sov_dt11 or df is PType_Entity
+        highlight = False
+        if df is Entity_SOV3 or df is sov_dt11 or df is PType_Entity:
+            highlight = True
+        if (df is pubs_table2O or df is Unique_Articles2O) and any("total" in str(val).lower() for val in df.iloc[-1]):
+            highlight = True
         add_styling_to_worksheet(ws, df, current_row, comment, highlight_last_row=highlight)
         current_row += len(df) + 4
-
     wb.save(file_name)
 
 def multiple_dfs1(df_list, sheet_name, wb, comments):
