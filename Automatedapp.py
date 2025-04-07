@@ -338,6 +338,15 @@ def add_styling_to_worksheet(ws, df, start_row, comment, highlight_last_row=Fals
     cell.font = Font(color="000000", bold=True, name="Gill Sans MT")
     cell.alignment = Alignment(horizontal='center')
     ws.merge_cells(start_row=start_row, start_column=1, end_row=start_row, end_column=len(df.columns))
+    thin_side = Side(border_style="thin", color="000000")
+    for col in range(1, len(df.columns) + 1):
+        c = ws.cell(row=start_row, column=col)
+        if col == 1:
+            c.border = Border(left=thin_side, top=thin_side, bottom=thin_side)
+        elif col == len(df.columns):
+            c.border = Border(right=thin_side, top=thin_side, bottom=thin_side)
+        else:
+            c.border = Border(top=thin_side, bottom=thin_side)
     
     # Increment the start row
     start_row += 1
