@@ -2062,7 +2062,7 @@ News search: All Articles: entity mentioned at least once in the article"""
                 # List of DataFrames to save
                 pubs_table1 = pubs_table.head(10)
                 Jour_table1 = Jour_table.head(10)
-                dfs = [Entity_SOV3, sov_dt11, pubs_table,Unique_Articles1O, PType_Entity, Jour_Comp, Jour_Client]
+                dfs = [Entity_SOV3, sov_dt11, pubs_table1,Unique_Articles1O, PType_Entity, Jour_Comp, Jour_Client]
                 table_titles = [f'SOV Table of {client_name} and competition', f'Month-on-Month Table of {client_name} and competition', f'Publication Table on {client_name} and competition', f'Journalist writing on {client_name} and competition',
                             f'Publication Types writing on {client_name} and competition',f'Journalists writing on Comp and not on {client_name}', f'Journalists writing on {client_name} and not on Comp'
                             ]
