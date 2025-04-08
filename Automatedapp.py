@@ -904,6 +904,7 @@ if date_selected:# File Upload Section
             sov_order = Entity_SOV3['Entity'].tolist()
             sov_order_no_client = [ent for ent in sov_order if not ent.startswith("Client-") and ent != "Total"]
             ordered_cols = (['Date', client_columndt] +[ent for ent in sov_order_no_client if ent in sov_dt1.columns] + (['Total'] if 'Total' in sov_dt1.columns else []))
+            for_entity_data = finaldata
            # Reorder the columns
             sov_dt11 = sov_dt1[ordered_cols]
             selected_columndt = sov_dt1[["Date", client_columndt]]
@@ -1612,7 +1613,7 @@ News search: All Articles: entity mentioned at least once in the article"""
                 wb.save(excel_io_2)
                 excel_io_2.seek(0)
                 with pd.ExcelWriter(excel_io_2, engine='openpyxl', mode='a', if_sheet_exists='new') as writer:
-                    create_entity_sheets(finaldata, writer)
+                    create_entity_sheets(for_entity_data, writer)
                     writer.book.worksheets[0].title = "Report"
                 wb_final = load_workbook(excel_io_2)
                 all_sheets = wb_final.sheetnames
@@ -2096,29 +2097,21 @@ News search: All Articles: entity mentioned at least once in the article"""
         f"•The  journalists reporting on {client_name} and not on its competitors are Navjeevan Gopal from The Indian Express with 1 article and Munieshwer A Sagar from TOI with 1 articles.\n",
         
                               ]
-                
-                # Create a new PowerPoint presentation
-                # prs = Presentation()
-        
-                # textbox_text.word_wrap = True
+              
         
                 # Loop through each DataFrame and create a new slide with a table
                 for i, (df, title) in enumerate(zip(dfs, table_titles)):
                     slide = prs.slides.add_slide(prs.slide_layouts[6])
                     add_table_to_slide(slide, df, title, textbox_text[i])
-                    # # Add image only to the first slide
-                    if i == 0:  
+                    if i == 0:
                         img_path4 = generate_bar_chart(dfs[0])  # Generate chart from first DataFrame
                         add_image_to_slide(slide, img_path4)
-        
                     if i == 1:  
                         img_path5 = generate_line_graph(sov_dt1)  # Generate chart from first DataFrame
                         add_image_to_slide1(slide, img_path5)
-        
                     if i == 4:  
                         img_path6 = generate_bar_pchart(dfs[4])  # Generate chart from first DataFrame
                         add_image_to_slide2(slide, img_path6)
-        
                     if i == 6:
                         wordcloud_path = generate_word_cloud(finaldata)  # Generate word cloud from DataFrame
                         add_image_to_slide11(slide, wordcloud_path)
@@ -2127,8 +2120,6 @@ News search: All Articles: entity mentioned at least once in the article"""
                 pptx_output = io.BytesIO()
                 prs.save(pptx_output)
                 pptx_output.seek(0)
-        
-                # Provide download button
                 st.sidebar.download_button(
                     label="Download PowerPoint Presentation",
                     data=pptx_output,
