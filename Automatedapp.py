@@ -338,15 +338,6 @@ def add_styling_to_worksheet(ws, df, start_row, comment, highlight_last_row=Fals
     cell.font = Font(color="000000", bold=True, name="Gill Sans MT")
     cell.alignment = Alignment(horizontal='center')
     ws.merge_cells(start_row=start_row, start_column=1, end_row=start_row, end_column=len(df.columns))
-    thin_side = Side(border_style="thin", color="000000")
-    for col in range(1, len(df.columns) + 1):
-        c = ws.cell(row=start_row, column=col)
-        if col == 1:
-            c.border = Border(left=thin_side, top=thin_side, bottom=thin_side)
-        elif col == len(df.columns):
-            c.border = Border(right=thin_side, top=thin_side, bottom=thin_side)
-        else:
-            c.border = Border(top=thin_side, bottom=thin_side)
     
     # Increment the start row
     start_row += 1
@@ -398,14 +389,13 @@ def multiple_dfs(df_list, sheet_name, file_name, comments, entity_info):
     # Add entity information to the first 4 rows
     add_entity_info(ws, entity_info, current_row)
     current_row += 6
+
     for df, comment in zip(df_list, comments):
-        highlight = False
-        if df is Entity_SOV3 or df is sov_dt11 or df is PType_Entity:
-            highlight = True
-        if (df is pubs_table2O or df is Unique_Articles2O) and any("total" in str(val).lower() for val in df.iloc[-1]):
-            highlight = True
+        # Check if this DF needs the last row bolded
+        highlight = df is Entity_SOV3 or df is sov_dt11 or df is PType_Entity
         add_styling_to_worksheet(ws, df, current_row, comment, highlight_last_row=highlight)
         current_row += len(df) + 4
+
     wb.save(file_name)
 
 def multiple_dfs1(df_list, sheet_name, wb, comments):
@@ -904,7 +894,6 @@ if date_selected:# File Upload Section
             sov_order = Entity_SOV3['Entity'].tolist()
             sov_order_no_client = [ent for ent in sov_order if not ent.startswith("Client-") and ent != "Total"]
             ordered_cols = (['Date', client_columndt] +[ent for ent in sov_order_no_client if ent in sov_dt1.columns] + (['Total'] if 'Total' in sov_dt1.columns else []))
-            for_entity_data = finaldata
            # Reorder the columns
             sov_dt11 = sov_dt1[ordered_cols]
             selected_columndt = sov_dt1[["Date", client_columndt]]
@@ -1369,7 +1358,7 @@ if date_selected:# File Upload Section
             #     raise ValueError("No columns starting with 'Client' were found.")
             client_column1 = [col for col in Unique_Articles.columns if 'Client' in col][0]
             # Filter the dataframe where the 'Client' column is not equal to zero and all other columns are equal to zero
-            filtered_df1 = Unique_Articles[Unique_Articles[client_column1] == Unique_Articles['Total Unique Articles']]
+            filtered_df1 = Unique_Articles[(Unique_Articles[client_column1] != 0) & (Unique_Articles.drop([client_column1, 'Journalist', 'Publication Name','Total Unique Articles'], axis=1).eq(0).all(axis=1))]
     
             Jour_Comp = filtered_df.head(10)
             ordered_cols = ['Journalist', 'Publication Name',client_columndt] + [ent for ent in sov_order_no_client if ent in  Jour_Comp.columns] + (['Total Unique Articles'] if 'Total Unique Articles' in Jour_Comp.columns else [])
@@ -1599,7 +1588,7 @@ if date_selected:# File Upload Section
                         
                 entity_info = f"""Entity:{client_name}
 Time Period of analysis: {start_date} to {end_date}
-Source: (Online) Meltwater, Select 100 online publications, which include Hybrid Media - Business, General & Technology and Digital First publications.
+Source: (Online) Meltwater, Select 100 online publications, which include Hybrid Media - Business, General and Technology, Digital First publications.
 News search: All Articles: entity mentioned at least once in the article"""
                 excel_io_all = io.BytesIO()
                 w1 = multiple_dfs(dfs, 'Tables', excel_io_all, comments, entity_info)
@@ -1613,7 +1602,7 @@ News search: All Articles: entity mentioned at least once in the article"""
                 wb.save(excel_io_2)
                 excel_io_2.seek(0)
                 with pd.ExcelWriter(excel_io_2, engine='openpyxl', mode='a', if_sheet_exists='new') as writer:
-                    create_entity_sheets(for_entity_data, writer)
+                    create_entity_sheets(finaldata, writer)
                     writer.book.worksheets[0].title = "Report"
                 wb_final = load_workbook(excel_io_2)
                 all_sheets = wb_final.sheetnames
@@ -1734,7 +1723,7 @@ News search: All Articles: entity mentioned at least once in the article"""
         
         
             # Add Source text
-            source_text = "Source: (Online) Meltwater, Select 100 online publications, which include Hybrid Media - Business, General & Technology and Digital First publications."
+            source_text = "Source: (Online) Meltwater, Select 100 online publications, which include Hybrid Media - Business, General and Technology,Digital First publications."
             source_shape = slide.shapes.add_textbox(Inches(0.6), Inches(3), Inches(10), Inches(1.5))  # Adjusted width
             source_frame = source_shape.text_frame
             source_frame.word_wrap = True  # Enable text wrapping
@@ -2063,7 +2052,7 @@ News search: All Articles: entity mentioned at least once in the article"""
                 # List of DataFrames to save
                 pubs_table1 = pubs_table.head(10)
                 Jour_table1 = Jour_table.head(10)
-                dfs = [Entity_SOV3, sov_dt11, pubs_table1,Unique_Articles1O, PType_Entity, Jour_Comp, Jour_Client]
+                dfs = [Entity_SOV3, sov_dt11, pubs_table,Unique_Articles1O, PType_Entity, Jour_Comp, Jour_Client]
                 table_titles = [f'SOV Table of {client_name} and competition', f'Month-on-Month Table of {client_name} and competition', f'Publication Table on {client_name} and competition', f'Journalist writing on {client_name} and competition',
                             f'Publication Types writing on {client_name} and competition',f'Journalists writing on Comp and not on {client_name}', f'Journalists writing on {client_name} and not on Comp'
                             ]
@@ -2097,21 +2086,29 @@ News search: All Articles: entity mentioned at least once in the article"""
         f"•The  journalists reporting on {client_name} and not on its competitors are Navjeevan Gopal from The Indian Express with 1 article and Munieshwer A Sagar from TOI with 1 articles.\n",
         
                               ]
-              
+                
+                # Create a new PowerPoint presentation
+                # prs = Presentation()
+        
+                # textbox_text.word_wrap = True
         
                 # Loop through each DataFrame and create a new slide with a table
                 for i, (df, title) in enumerate(zip(dfs, table_titles)):
                     slide = prs.slides.add_slide(prs.slide_layouts[6])
                     add_table_to_slide(slide, df, title, textbox_text[i])
-                    if i == 0:
+                    # # Add image only to the first slide
+                    if i == 0:  
                         img_path4 = generate_bar_chart(dfs[0])  # Generate chart from first DataFrame
                         add_image_to_slide(slide, img_path4)
+        
                     if i == 1:  
                         img_path5 = generate_line_graph(sov_dt1)  # Generate chart from first DataFrame
                         add_image_to_slide1(slide, img_path5)
+        
                     if i == 4:  
                         img_path6 = generate_bar_pchart(dfs[4])  # Generate chart from first DataFrame
                         add_image_to_slide2(slide, img_path6)
+        
                     if i == 6:
                         wordcloud_path = generate_word_cloud(finaldata)  # Generate word cloud from DataFrame
                         add_image_to_slide11(slide, wordcloud_path)
@@ -2120,6 +2117,8 @@ News search: All Articles: entity mentioned at least once in the article"""
                 pptx_output = io.BytesIO()
                 prs.save(pptx_output)
                 pptx_output.seek(0)
+        
+                # Provide download button
                 st.sidebar.download_button(
                     label="Download PowerPoint Presentation",
                     data=pptx_output,
