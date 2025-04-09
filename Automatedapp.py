@@ -1369,7 +1369,7 @@ if date_selected:# File Upload Section
             #     raise ValueError("No columns starting with 'Client' were found.")
             client_column1 = [col for col in Unique_Articles.columns if 'Client' in col][0]
             # Filter the dataframe where the 'Client' column is not equal to zero and all other columns are equal to zero
-            filtered_df1 = Unique_Articles[(Unique_Articles[client_column1] != 0) & (Unique_Articles.drop([client_column1, 'Journalist', 'Publication Name','Total Unique Articles'], axis=1).eq(0).all(axis=1))]
+            filtered_df1 = Unique_Articles[Unique_Articles[client_column1] == Unique_Articles['Total Unique Articles']]
     
             Jour_Comp = filtered_df.head(10)
             ordered_cols = ['Journalist', 'Publication Name',client_columndt] + [ent for ent in sov_order_no_client if ent in  Jour_Comp.columns] + (['Total Unique Articles'] if 'Total Unique Articles' in Jour_Comp.columns else [])
