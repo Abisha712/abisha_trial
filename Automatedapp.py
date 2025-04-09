@@ -1648,7 +1648,7 @@ News search: All Articles: entity mentioned at least once in the article"""
             # "Publication type,Publication Name and Entity Table":ppe1,
             "Entity-wise Sheets": finaldata,                            # Add this option to download entity-wise sheets
             "Journalist writing on Comp not on Client" : Jour_Comp, 
-            "Journalist writing on Client & not on Comp" : Jour_Client
+            "Journalist writing on Client not on Comp" : Jour_Client
         } 
             selected_dataframe = st.selectbox("Select DataFrame to Preview:", list(dataframes_to_download.keys()))
             st.dataframe(dataframes_to_download[selected_dataframe])
