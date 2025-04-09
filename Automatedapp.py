@@ -249,6 +249,7 @@ def create_entity_sheets(data, writer):
         # Filter data
         entity_df = data[data['Entity'] == Entity].copy()
         entity_df['Date'] = entity_df['Date'].dt.date
+        entity_df['Journalist'] = entity_df['Journalist'].str.replace(r"[\[\]']", "", regex=True)
 
         # Drop unwanted columns (if they exist)
         entity_df.drop(columns=[col for col in cols_to_drop if col in entity_df.columns], inplace=True)
@@ -904,7 +905,7 @@ if date_selected:# File Upload Section
             sov_order = Entity_SOV3['Entity'].tolist()
             sov_order_no_client = [ent for ent in sov_order if not ent.startswith("Client-") and ent != "Total"]
             ordered_cols = (['Date', client_columndt] +[ent for ent in sov_order_no_client if ent in sov_dt1.columns] + (['Total'] if 'Total' in sov_dt1.columns else []))
-            for_entity_data = finaldata
+            for_entity_data = finaldata.copy()
            # Reorder the columns
             sov_dt11 = sov_dt1[ordered_cols]
             selected_columndt = sov_dt1[["Date", client_columndt]]
@@ -1367,11 +1368,11 @@ if date_selected:# File Upload Section
             #     client_columns = client_columns[0]
             # else:
             #     raise ValueError("No columns starting with 'Client' were found.")
-            client_column1 = [col for col in Unique_Articles.columns if 'Client' in col][0]
-            # Filter the dataframe where the 'Client' column is not equal to zero and all other columns are equal to zero
-            filtered_df1 = Unique_Articles[Unique_Articles[client_column1] == Unique_Articles['Total Unique Articles']]
+            client_columns = [col for col in Unique_Articles.columns if col.startswith('Client-') and col != 'Total Unique Articles']
+            competitor_columns = [col for col in Unique_Articles.columns if not col.startswith('Client-') and col != 'Total Unique Articles' and col!='Journalist' and col!= 'Publication Name' and col != 'Client %' ]
+            filtered_df1 = Unique_Articles[(Unique_Articles[client_columns].gt(0).any(axis=1)) & (Unique_Articles[competitor_columns].eq(0).all(axis=1))  # All competitor columns should have zero values
+]
 
-    
             Jour_Comp = filtered_df.head(10)
             ordered_cols = ['Journalist', 'Publication Name',client_columndt] + [ent for ent in sov_order_no_client if ent in  Jour_Comp.columns] + (['Total Unique Articles'] if 'Total Unique Articles' in Jour_Comp.columns else [])
             
@@ -1647,7 +1648,7 @@ News search: All Articles: entity mentioned at least once in the article"""
             # "Publication type,Publication Name and Entity Table":ppe1,
             "Entity-wise Sheets": finaldata,                            # Add this option to download entity-wise sheets
             "Journalist writing on Comp not on Client" : Jour_Comp, 
-            "Journalist writing on Client & not on Comp" : Jour_Client,
+            "Journalist writing on Client & not on Comp" : Jour_Client
         } 
             selected_dataframe = st.selectbox("Select DataFrame to Preview:", list(dataframes_to_download.keys()))
             st.dataframe(dataframes_to_download[selected_dataframe])
@@ -2163,7 +2164,7 @@ News search: All Articles: entity mentioned at least once in the article"""
                     # "Publication type,Publication Name and Entity Table":ppe1,
                     "Entity-wise Sheets": finaldata,                            # Add this option to download entity-wise sheets
                     "Journalist writing on Comp & not on Client" : Jour_Comp, 
-                    "Journalist writing on Client & not on Comp" : Jour_Client,
+                    "Journalist writing on Client & not on Comp" : Jour_Client
                 }
             selected_dataframe = st.sidebar.selectbox("Select DataFrame:", list(dataframes_to_download.keys()))
             if st.sidebar.button("Download Selected DataFrame"):
