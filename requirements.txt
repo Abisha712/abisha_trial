@@ -11,5 +11,7 @@ wordcloud
 fuzzywuzzy
 gensim
 spacy
+python-docx
+
 
 
